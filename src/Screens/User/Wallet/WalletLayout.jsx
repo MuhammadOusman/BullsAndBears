@@ -1,11 +1,12 @@
-import React from 'react'
+import React from 'react';
+
 
 const WalletLayout = () => {
   return (
     <>
-      <h1>Wallet</h1>
+      <h1>Wallet Page</h1>
     </>
-  )
+  );
 }
 
 export default WalletLayout

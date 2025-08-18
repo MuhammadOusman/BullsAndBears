@@ -20,6 +20,7 @@ import Trade from './screens/Admin/Trade';
 
 // User Screens
 import UserHomePage from './screens/User/HomePage';
+import UserLayout from './Screens/User/UserLayout';
 import Contact from './screens/User/Contact';
 import Discover from './screens/User/Discover';
 import WatchList from './screens/User/WatchList';
@@ -77,7 +78,8 @@ function App() {
 
       {/* Protected User routes */}
       <Route element={<ProtectedRoute isAllowed={auth.isLoggedIn && auth.role === 'user'} />}> 
-        <Route path="/user" element={<UserHomePage onLogout={handleLogout} />} >
+        <Route path="/user" element={<UserLayout />} >
+          <Route index element={<UserHomePage />} />
           <Route path="home" element={<UserHomePage />} />
           <Route path="contact" element={<Contact />} />
           <Route path="discover" element={<Discover />} />

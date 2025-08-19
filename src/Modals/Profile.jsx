@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 const countries = ["South Korea", "United States", "India", "United Kingdom", "Canada"];
-const genders = ["Male", "Female", "Other"];
+const genders = ["Male", "Female"];
 
 const ProfileModal = ({ open, onClose }) => {
 	const [form, setForm] = useState({

@@ -4,32 +4,32 @@ import { useState } from 'react';
 import './App.css';
 
 // Screens
-import LandingPg from './screens/LandingPg';
-import Login from './screens/Login';
-import Signup from './screens/Signup';
-
+import LandingPg from './Screens/LandingPg';
+import Login from './Screens/Login';
+import Signup from './Screens/Signup';
 
 // Admin Screens
-import AdminLayout from './screens/Admin/AdminLayout';
-import AdminHome from './screens/Admin/Home';
-import Approval from './screens/Admin/Approval';
-import Funds from './screens/Admin/Funds';
+import AdminLayout from './Screens/Admin/AdminLayout';
+import AdminHome from './Screens/Admin/Home';
+import Approval from './Screens/Admin/Approval';
+import Funds from './Screens/Admin/Funds';
 import Logout from './Modals/logout';
-import Pass from './screens/Admin/Pass';
-import Trade from './screens/Admin/Trade';
+import Pass from './Screens/Admin/Pass';
+import Trade from './Screens/Admin/Trade';
 
 // User Screens
-import UserHomePage from './screens/User/HomePage';
+import UserHomePage from './Screens/User/HomePage';
 import UserLayout from './Screens/User/UserLayout';
-import Contact from './screens/User/Contact';
-import Discover from './screens/User/Discover';
-import WatchList from './screens/User/WatchList';
+import Contact from './Screens/User/Contact';
+import Discover from './Screens/User/Discover';
+import WatchList from './Screens/User/WatchList';
 
 // Wallet Screens
-import WalletLayout from './screens/User/Wallet/WalletLayout';
-import WalletHistory from './screens/User/Wallet/History';
-import WalletOverview from './screens/User/Wallet/Overview';
-import WalletTransaction from './screens/User/Wallet/Transaction';
+import WalletLayout from './Screens/User/Wallet/WalletLayout';
+import WalletHistory from './Screens/User/Wallet/History';
+import WalletOverview from './Screens/User/Wallet/Overview';
+import WalletTransaction from './Screens/User/Wallet/Transaction';
+import Deposit from './Screens/User/Wallet/Deposit';
 
 function App() {
   // Persist auth state in localStorage
@@ -88,6 +88,7 @@ function App() {
           <Route path="wallet" element={<WalletLayout />} >
             <Route index element={<WalletOverview />} />
             <Route path="overview" element={<WalletOverview />} />
+            <Route path="deposit" element={<Deposit />} />
             <Route path="history" element={<WalletHistory />} />
             <Route path="transaction" element={<WalletTransaction />} />
           </Route>

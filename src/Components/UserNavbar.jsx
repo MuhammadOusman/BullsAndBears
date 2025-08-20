@@ -44,7 +44,7 @@ const UserNavbar = () => {
               // Highlight Home for both /user and /user/home
               const isActive = link.name === "Home"
                 ? location.pathname === "/user" || location.pathname === "/user/home"
-                : location.pathname === link.path;
+                : location.pathname.startsWith(link.path);
               return (
                 <Link
                   key={link.name}
@@ -112,7 +112,7 @@ const UserNavbar = () => {
           {navLinks.map(link => {
             const isActive = link.name === "Home"
               ? location.pathname === "/user" || location.pathname === "/user/home"
-              : location.pathname === link.path;
+              : location.pathname.startsWith(link.path);
             return (
               <Link
                 key={link.name}
@@ -174,4 +174,3 @@ export function Component() {
     </Navbar>
   );
 }
-

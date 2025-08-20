@@ -4,13 +4,9 @@
 import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "flowbite-react";
 import { useState } from "react";
 
-export function Component() {
-  const [openModal, setOpenModal] = useState(true);
-
+export default function TermsModal({ open, onClose }) {
   return (
-    <>
-      <Button onClick={() => setOpenModal(true)}>Toggle modal</Button>
-      <Modal show={openModal} onClose={() => setOpenModal(false)}>
+    <Modal show={open} onClose={onClose}>
         <ModalHeader>Terms of Service</ModalHeader>
         <ModalBody>
           <div className="space-y-6">
@@ -26,12 +22,11 @@ export function Component() {
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button onClick={() => setOpenModal(false)}>I accept</Button>
-          <Button color="alternative" onClick={() => setOpenModal(false)}>
+          <Button onClick={onClose}>I accept</Button>
+          <Button color="alternative" onClick={onClose}>
             Decline
           </Button>
         </ModalFooter>
       </Modal>
-    </>
   );
 }

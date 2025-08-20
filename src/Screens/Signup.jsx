@@ -1,8 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PrivacyModal from '../Modals/privacy';
+import TermsModal from '../Modals/terms';
 
 const Signup = () => {
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const navigate = useNavigate();
   const [form, setForm] = React.useState({
     mobile: '',
@@ -176,14 +180,24 @@ const Signup = () => {
               onChange={handleChange}
             />
             <label htmlFor="terms" className="text-xs text-gray-600">
-              I have read and agree to the <a href="#" className="underline">Terms & Conditions</a> and <a href="#" className="underline">Privacy Policy</a> of this application.
+              I have read and agree to the 
+              <button type="button" className="underline text-blue-600 hover:text-blue-800 px-1" onClick={() => setShowTerms(true)}>
+                Terms & Conditions
+              </button>
+              and
+              <button type="button" className="underline text-blue-600 hover:text-blue-800 px-1" onClick={() => setShowPrivacy(true)}>
+                Privacy Policy
+              </button>
+              of this application.
             </label>
           </div>
           {errors.terms && <p className="text-xs text-red-500 mb-2">{errors.terms}</p>}
           <button type="submit" className="w-full bg-red-600 text-white rounded-full py-2 text-lg font-semibold hover:bg-red-700">
             Create account
           </button>
-        </form>
+  </form>
+  {showPrivacy && <PrivacyModal open={showPrivacy} onClose={() => setShowPrivacy(false)} />}
+  {showTerms && <TermsModal open={showTerms} onClose={() => setShowTerms(false)} />}
       </div>
     </div>
   );

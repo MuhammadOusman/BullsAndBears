@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PrivacyModal from '../Modals/privacy';
 import TermsModal from '../Modals/terms';
+import { authAPI } from '../services/api';
 
 const Signup = () => {
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -18,6 +19,9 @@ const Signup = () => {
     terms: false
   });
   const [errors, setErrors] = React.useState({});
+  const [loading, setLoading] = React.useState(false);
+  const [signupError, setSignupError] = React.useState('');
+  const [signupSuccess, setSignupSuccess] = React.useState('');
 
   const validate = () => {
     const newErrors = {};
@@ -59,11 +63,52 @@ const Signup = () => {
     setForm(prev => ({ ...prev, [id]: type === 'checkbox' ? checked : value }));
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSignupError('');
+    setSignupSuccess('');
+    setLoading(true);
+    
     if (validate()) {
-      // Submit logic here
+      try {
+        // Map form fields to backend expected format
+        const signupData = {
+          firstname: form.firstName,
+          lastname: form.lastName,
+          email: form.email,
+          password: form.password,
+          phone_number: form.mobile,
+        };
+        
+        // Call the real API
+        const response = await authAPI.signup(signupData);
+        
+        // Success message
+        setSignupSuccess('Account created successfully! Wait for admin approval.');
+        
+        // Clear form
+        setForm({
+          mobile: '',
+          firstName: '',
+          lastName: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          terms: false
+        });
+        
+        // Redirect to login after 3 seconds
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+        
+      } catch (error) {
+        console.error('Signup error:', error);
+        setSignupError(error.message || 'Signup failed. Please try again.');
+      }
     }
+    
+    setLoading(false);
   };
 
   return (
@@ -192,8 +237,17 @@ const Signup = () => {
             </label>
           </div>
           {errors.terms && <p className="text-xs text-red-500 mb-2">{errors.terms}</p>}
-          <button type="submit" className="w-full bg-red-600 text-white rounded-full py-2 text-lg font-semibold hover:bg-red-700">
-            Create account
+          
+          {/* Error and success messages */}
+          {signupError && <p className="text-xs text-red-500 mb-2 text-center">{signupError}</p>}
+          {signupSuccess && <p className="text-xs text-green-600 mb-2 text-center">{signupSuccess}</p>}
+          
+          <button 
+            type="submit" 
+            className="w-full bg-red-600 text-white rounded-full py-2 text-lg font-semibold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
+          >
+            {loading ? 'Creating account...' : 'Create account'}
           </button>
   </form>
   {showPrivacy && <PrivacyModal open={showPrivacy} onClose={() => setShowPrivacy(false)} />}

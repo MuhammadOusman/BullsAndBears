@@ -1,54 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { adminAPI, authUtils } from '../../services/api';
 
 const Pass = () => {
-  const [passwordRequests, setPasswordRequests] = useState([
-    {
-      id: 1,
-      userName: 'Shuvo',
-      userMail: 'shuvo@gmail.com',
-      requestedOn: '01/05/2025',
-      time: '6:00 pm',
-      password: '123456789',
-      status: 'pending'
-    },
-    {
-      id: 2,
-      userName: 'Shuja',
-      userMail: 'shuvo@gmail.com',
-      requestedOn: '11/06/2025',
-      time: '1:05 pm',
-      password: '123456789',
-      status: 'pending'
-    },
-    {
-      id: 3,
-      userName: 'Sujana',
-      userMail: 'sujana@gmail.com',
-      requestedOn: '09/07/2025',
-      time: '12:11 am',
-      password: '123456789',
-      status: 'pending'
-    }
-  ]);
+  const [passwordRequests, setPasswordRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const handleApprove = (id) => {
-    setPasswordRequests(prev => 
-      prev.map(request => 
-        request.id === id ? { ...request, status: 'approved' } : request
-      )
-    );
-    console.log(`Approved password change request for ID: ${id}`);
-    alert('Password change request approved successfully!');
+  useEffect(() => {
+    loadPasswordRequests();
+  }, []);
+
+  const loadPasswordRequests = async () => {
+    try {
+      setLoading(true);
+      
+      if (!authUtils.isAuthenticated()) {
+        setError('Please log in to access admin features');
+        return;
+      }
+
+      const result = await adminAPI.getPasswordChangeRequests();
+      if (result.err) {
+        throw new Error(result.message);
+      }
+
+      setPasswordRequests(result.data || []);
+      setError('');
+    } catch (err) {
+      console.error('Error loading password requests:', err);
+      setError(err.message || 'Failed to load password change requests');
+      
+      if (err.status === 401 || err.status === 404) {
+        authUtils.logout();
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReject = (id) => {
-    setPasswordRequests(prev => 
-      prev.map(request => 
-        request.id === id ? { ...request, status: 'rejected' } : request
-      )
-    );
-    console.log(`Rejected password change request for ID: ${id}`);
-    alert('Password change request rejected successfully!');
+  const handleApprove = async (id) => {
+    try {
+      const result = await adminAPI.approvePasswordChange(id, 'approve');
+      if (result.err) {
+        throw new Error(result.message);
+      }
+
+      // Remove from pending list
+      setPasswordRequests(prev => prev.filter(req => req._id !== id));
+      alert('Password change request approved successfully!');
+    } catch (err) {
+      console.error('Error approving password change:', err);
+      alert('Failed to approve password change: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      const result = await adminAPI.approvePasswordChange(id, 'reject');
+      if (result.err) {
+        throw new Error(result.message);
+      }
+
+      // Remove from pending list
+      setPasswordRequests(prev => prev.filter(req => req._id !== id));
+      alert('Password change request rejected successfully!');
+    } catch (err) {
+      console.error('Error rejecting password change:', err);
+      alert('Failed to reject password change: ' + (err.message || 'Unknown error'));
+    }
   };
 
   const pendingCount = passwordRequests.filter(request => request.status === 'pending').length;

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authAPI, authUtils } from '../services/api';
 
 
 
@@ -12,6 +13,7 @@ const Login = ({ onLogin }) => {
   const [password, setPassword] = React.useState("");
   const [errors, setErrors] = React.useState({});
   const [loginError, setLoginError] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
 
   const validate = () => {
     const newErrors = {};
@@ -22,27 +24,56 @@ const Login = ({ onLogin }) => {
     }
     if (!password) {
       newErrors.password = "Password is required.";
-    } else if (password.length < 8) {
+    } else if (password.length < 6) {
       newErrors.password = "Password must be at least 8 characters.";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoginError("");
+    setLoading(true);
+    
     if (validate()) {
-      if (email === "user@gmail.com" && password === "ousman123") {
-        if (onLogin) onLogin("user");
-        navigate("/user");
-      } else if (email === "admin@gmail.com" && password === "ousman123") {
-        if (onLogin) onLogin("admin");
-        navigate("/admin");
-      } else {
-        setLoginError("Invalid email or password.");
+      try {
+        // Call the real API
+        const response = await authAPI.login({ email, password });
+        console.log(response);
+
+
+        // Extract token and user data from response
+        const { token, user } = response.data;
+        
+        // Store token using auth utilities
+        authUtils.login(token);
+        
+        // Determine user role and navigate
+        if (user.role === 'admin') {
+          if (onLogin) onLogin('admin');
+          navigate('/admin');
+        } else {
+          if (onLogin) onLogin('user');
+          navigate('/user');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        
+        // Handle CORS and network errors with user-friendly messages
+        if (error.message.includes('CORS') || error.message.includes('fetch')) {
+          setLoginError('Unable to connect to server. Please try again later or contact support.');
+        } else if (error.status === 401 || error.status === 403) {
+          setLoginError('Invalid email or password. Please check your credentials.');
+        } else if (error.status === 404) {
+          setLoginError('User not found. Please check your email address.');
+        } else {
+          setLoginError(error.message || 'Login failed. Please try again.');
+        }
       }
     }
+    
+    setLoading(false);
   };
 
   return (
@@ -72,6 +103,7 @@ const Login = ({ onLogin }) => {
               id="email"
               type="email"
               required
+              autoComplete="email"
               placeholder="Enter your email address"
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${errors.email ? 'border-red-500' : ''}`}
               value={email}
@@ -85,6 +117,7 @@ const Login = ({ onLogin }) => {
               id="password"
               type="password"
               required
+              autoComplete="current-password"
               placeholder="Enter your password "
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${errors.password ? 'border-red-500' : ''}`}
               value={password}
@@ -93,8 +126,12 @@ const Login = ({ onLogin }) => {
             {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
           </div>
           {loginError && <p className="text-xs text-red-500 mt-1 text-center">{loginError}</p>}
-          <button type="submit" className="w-full bg-red-600 text-white rounded-full py-2 text-lg font-semibold hover:bg-red-700">
-            Sign in
+          <button 
+            type="submit" 
+            className="w-full bg-red-600 text-white rounded-full py-2 text-lg font-semibold hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
       </div>

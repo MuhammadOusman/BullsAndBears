@@ -1,62 +1,105 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { adminAPI, authUtils } from '../../services/api';
 
 const Approval = () => {
-  const [pendingApprovals, setPendingApprovals] = useState([
-    {
-      id: 1,
-      name: 'Shuvo',
-      userMail: 'shuvo@gmail.com',
-      mobileNumber: '123456789',
-      password: '123456789',
-      requestedOn: '01/05/2025',
-      time: '6:00 pm',
-      status: 'pending'
-    },
-    {
-      id: 2,
-      name: 'Shayan',
-      userMail: 'shuvo@gmail.com',
-      mobileNumber: '123456789',
-      password: '123456789',
-      requestedOn: '11/06/2025',
-      time: '1:05 pm',
-      status: 'pending'
-    },
-    {
-      id: 3,
-      name: 'Sujana',
-      userMail: 'sujana@gmail.com',
-      mobileNumber: '123456789',
-      password: '123456789',
-      requestedOn: '09/07/2025',
-      time: '12:11 am',
-      status: 'pending'
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    loadPendingUsers();
+  }, []);
+
+  const loadPendingUsers = async () => {
+    try {
+      setLoading(true);
+      
+      if (!authUtils.isAuthenticated()) {
+        setError('Please log in to access admin features');
+        return;
+      }
+
+      const result = await adminAPI.getPendingUsers();
+      if (result.err) {
+        throw new Error(result.message);
+      }
+
+      setPendingApprovals(result.data || []);
+      setError('');
+    } catch (err) {
+      console.error('Error loading pending users:', err);
+      setError(err.message || 'Failed to load pending users');
+      
+      if (err.status === 401 || err.status === 404) {
+        authUtils.logout();
+      }
+    } finally {
+      setLoading(false);
     }
-  ]);
-
-  const handleApprove = (id) => {
-    setPendingApprovals(prev => 
-      prev.map(user => 
-        user.id === id ? { ...user, status: 'approved' } : user
-      )
-    );
-    console.log(`Approved user with ID: ${id}`);
-    alert('User approved successfully!');
   };
 
-  const handleReject = (id) => {
-    setPendingApprovals(prev => 
-      prev.map(user => 
-        user.id === id ? { ...user, status: 'rejected' } : user
-      )
-    );
-    console.log(`Rejected user with ID: ${id}`);
-    alert('User rejected successfully!');
+  const handleApprove = async (id) => {
+    try {
+      const result = await adminAPI.approveUser(id, 'approve');
+      if (result.err) {
+        throw new Error(result.message);
+      }
+
+      // Remove from pending list
+      setPendingApprovals(prev => prev.filter(user => user._id !== id));
+      alert('User approved successfully!');
+    } catch (err) {
+      console.error('Error approving user:', err);
+      alert('Failed to approve user: ' + (err.message || 'Unknown error'));
+    }
   };
 
-  const pendingCount = pendingApprovals.filter(user => user.status === 'pending').length;
-  const approvedCount = pendingApprovals.filter(user => user.status === 'approved').length;
-  const rejectedCount = pendingApprovals.filter(user => user.status === 'rejected').length;
+  const handleReject = async (id) => {
+    try {
+      const result = await adminAPI.approveUser(id, 'reject');
+      if (result.err) {
+        throw new Error(result.message);
+      }
+
+      // Remove from pending list
+      setPendingApprovals(prev => prev.filter(user => user._id !== id));
+      alert('User rejected successfully!');
+    } catch (err) {
+      console.error('Error rejecting user:', err);
+      alert('Failed to reject user: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  // All pending users should show since they're not approved yet
+  const pendingCount = pendingApprovals.length;
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <h1 className="text-3xl font-bold">Sign Up Approval Awaiting</h1>
+        <div className="bg-white rounded-xl p-6 shadow-sm animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="space-y-3">
+            {[1,2,3].map(i => (
+              <div key={i} className="h-12 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <h1 className="text-3xl font-bold mb-6">Sign Up Approval Awaiting</h1>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <div className="text-red-600 font-semibold mb-2">Error Loading Pending Users</div>
+          <div className="text-red-500 text-sm">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -71,13 +114,13 @@ const Approval = () => {
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <div className="text-sm text-gray-600">Approved Users</div>
-          <div className="text-2xl font-bold text-green-600">{approvedCount}</div>
+          <div className="text-sm text-gray-600">Total Registered</div>
+          <div className="text-2xl font-bold text-blue-600">{pendingCount}</div>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <div className="text-sm text-gray-600">Rejected Users</div>
-          <div className="text-2xl font-bold text-red-600">{rejectedCount}</div>
+          <div className="text-sm text-gray-600">Awaiting Review</div>
+          <div className="text-2xl font-bold text-gray-600">{pendingCount}</div>
         </div>
       </div>
 
@@ -97,54 +140,44 @@ const Approval = () => {
         
         <div className="divide-y divide-gray-200">
           {pendingApprovals.length > 0 ? (
-            pendingApprovals.map((user) => (
-              <div 
-                key={user.id} 
-                className={`px-6 py-4 transition-colors ${
-                  user.status === 'approved' ? 'bg-green-50' : 
-                  user.status === 'rejected' ? 'bg-red-50' : 
-                  'hover:bg-gray-50'
-                }`}
-              >
-                <div className="grid grid-cols-[auto_1fr_1.5fr_1fr_1fr_1fr_1.5fr] gap-4 items-center">
-                  <span className="text-sm font-medium text-gray-900">{user.id}</span>
-                  <span className="text-sm font-medium text-gray-900">{user.name}</span>
-                  <span className="text-sm text-gray-600">{user.userMail}</span>
-                  <span className="text-sm text-gray-900">{user.mobileNumber}</span>
-                  <span className="text-sm text-gray-900 font-mono">{user.password}</span>
-                  <div className="text-sm text-gray-600">
-                    <div className="font-medium">{user.requestedOn}</div>
-                    <div className="text-xs text-gray-500">{user.time}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    {user.status === 'pending' ? (
-                      <>
-                        <button
-                          onClick={() => handleApprove(user.id)}
-                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-medium text-sm transition-colors"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleReject(user.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-medium text-sm transition-colors"
-                        >
-                          Reject
-                        </button>
-                      </>
-                    ) : (
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        user.status === 'approved' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                      </span>
-                    )}
+            pendingApprovals.map((user, index) => {
+              const dateCreated = new Date(user.createdAt);
+              const formatDate = dateCreated.toLocaleDateString();
+              const formatTime = dateCreated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              
+              return (
+                <div 
+                  key={user._id} 
+                  className="px-6 py-4 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="grid grid-cols-[auto_1fr_1.5fr_1fr_1fr_1fr_1.5fr] gap-4 items-center">
+                    <span className="text-sm font-medium text-gray-900">{index + 1}</span>
+                    <span className="text-sm font-medium text-gray-900">{user.fullName}</span>
+                    <span className="text-sm text-gray-600">{user.email}</span>
+                    <span className="text-sm text-gray-900">{user.phoneNumber || 'N/A'}</span>
+                    <span className="text-sm text-gray-900 font-mono">•••••••••</span>
+                    <div className="text-sm text-gray-600">
+                      <div className="font-medium">{formatDate}</div>
+                      <div className="text-xs text-gray-500">{formatTime}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleApprove(user._id)}
+                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-medium text-sm transition-colors"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleReject(user._id)}
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-medium text-sm transition-colors"
+                      >
+                        Reject
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="px-6 py-8 text-center text-gray-500">
               No pending approvals found

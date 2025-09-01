@@ -1,86 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { adminAPI, authUtils } from '../../services/api';
 
 const Funds = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Sample deposit/withdrawal data
-  const depositWithdrawalData = [
-    {
-      id: 1,
-      userName: 'Shuvo',
-      userEmail: 'shuvo@gmail.com',
-      prevTotalBalance: 210.67,
-      amount: 100.00,
-      remainingBalance: 110.67,
-      method: 'Deposit',
-      status: 'pending'
-    },
-    {
-      id: 2,
-      userName: 'Shuja',
-      userEmail: 'shuvo@gmail.com',
-      prevTotalBalance: 210.67,
-      amount: 100.00,
-      remainingBalance: 110.67,
-      method: 'Withdraw',
-      status: 'pending'
-    },
-    {
-      id: 3,
-      userName: 'Aliyana',
-      userEmail: 'sujana@gmail.com',
-      prevTotalBalance: 500.00,
-      amount: 500.00,
-      remainingBalance: 400.00,
-      method: 'Deposit',
-      status: 'pending'
-    }
-  ];
+  useEffect(() => {
+    loadTransactions();
+  }, []);
 
-  // Sample added fund history data
-  const addedFundHistory = [
-    {
-      id: 1,
-      userId: 2794685,
-      userEmail: 'shuvo@gmail.com',
-      prevTotalBalance: 1375.29,
-      addedFund: 100.00,
-      currentTotalBalance: 1475.29,
-      dateTime: '01/05/2025',
-      time: '6:00 pm'
-    },
-    {
-      id: 2,
-      userId: 2794686,
-      userEmail: 'shuvo@gmail.com',
-      prevTotalBalance: 925.29,
-      addedFund: 100.00,
-      currentTotalBalance: 954.29,
-      dateTime: '05/06/2025',
-      time: '2:00 pm'
-    },
-    {
-      id: 3,
-      userId: 2794687,
-      userEmail: 'sujana@gmail.com',
-      prevTotalBalance: 900.00,
-      addedFund: 500.00,
-      currentTotalBalance: 1400.00,
-      dateTime: '11/08/2025',
-      time: '1:00 am'
+  const loadTransactions = async () => {
+    try {
+      setLoading(true);
+      
+      if (!authUtils.isAuthenticated()) {
+        setError('Please log in to access admin features');
+        return;
+      }
+
+      const result = await adminAPI.getAllTransactions();
+      if (result.err) {
+        throw new Error(result.message);
+      }
+
+      setTransactions(result.data || []);
+      setError('');
+    } catch (err) {
+      console.error('Error loading transactions:', err);
+      setError(err.message || 'Failed to load transactions');
+      
+      if (err.status === 401 || err.status === 404) {
+        authUtils.logout();
+      }
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleTransactionAction = async (transactionId, action) => {
+    try {
+      const result = await adminAPI.approveTransaction(transactionId, action);
+      if (result.err) {
+        throw new Error(result.message);
+      }
+
+      alert(`Transaction ${action}d successfully`);
+      
+      // Remove from pending list
+      setTransactions(prev => prev.filter(t => t._id !== transactionId));
+    } catch (err) {
+      console.error('Error updating transaction:', err);
+      alert(`Failed to ${action} transaction: ` + (err.message || 'Unknown error'));
+    }
+  };
 
   // Filter function for search
-  const filteredDepositWithdrawal = depositWithdrawalData.filter(item =>
-    item.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.userEmail.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTransactions = transactions.filter(item =>
+    item.userId?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.purpose?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAction = (id, action) => {
-    console.log(`${action} action for ID: ${id}`);
-    // Implement approve/reject logic here
-  };
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <h1 className="text-3xl font-bold">Funds Management</h1>
+        <div className="bg-white rounded-xl p-6 shadow-sm animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="space-y-3">
+            {[1,2,3].map(i => (
+              <div key={i} className="h-12 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <h1 className="text-3xl font-bold mb-6">Funds Management</h1>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <div className="text-red-600 font-semibold mb-2">Error Loading Transactions</div>
+          <div className="text-red-500 text-sm">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-8">
@@ -110,26 +119,26 @@ const Funds = () => {
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-sm text-gray-600">Pending Deposits</div>
           <div className="text-2xl font-bold text-green-600">
-            {depositWithdrawalData.filter(item => item.method === 'Deposit').length}
+            {transactions.filter(item => item.purpose === 'deposit').length}
           </div>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-sm text-gray-600">Pending Withdrawals</div>
           <div className="text-2xl font-bold text-red-600">
-            {depositWithdrawalData.filter(item => item.method === 'Withdraw').length}
+            {transactions.filter(item => item.purpose === 'withdraw').length}
           </div>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-sm text-gray-600">Total Fund Requests</div>
-          <div className="text-2xl font-bold text-blue-600">{depositWithdrawalData.length}</div>
+          <div className="text-2xl font-bold text-blue-600">{transactions.length}</div>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <div className="text-sm text-gray-600">Total Added Funds</div>
+          <div className="text-sm text-gray-600">Total Amount</div>
           <div className="text-2xl font-bold text-purple-600">
-            ${addedFundHistory.reduce((sum, item) => sum + item.addedFund, 0).toFixed(2)}
+            ${transactions.reduce((sum, item) => sum + item.amount, 0).toFixed(2)}
           </div>
         </div>
       </div>

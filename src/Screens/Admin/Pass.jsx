@@ -112,9 +112,9 @@ const Pass = () => {
         
         <div className="divide-y divide-gray-200">
           {passwordRequests.length > 0 ? (
-            passwordRequests.map((request) => (
+            passwordRequests.map((request, index) => (
               <div 
-                key={request.id} 
+                key={request._id || request.id || index} 
                 className={`px-6 py-4 transition-colors ${
                   request.status === 'approved' ? 'bg-green-50' : 
                   request.status === 'rejected' ? 'bg-red-50' : 
@@ -122,27 +122,27 @@ const Pass = () => {
                 }`}
               >
                 <div className="grid grid-cols-[auto_1fr_1.5fr_1fr_1fr_1.5fr] gap-4 items-center">
-                  <span className="text-sm font-medium text-gray-900">{request.id}</span>
-                  <span className="text-sm font-medium text-gray-900">{request.userName}</span>
-                  <span className="text-sm text-gray-600">{request.userMail}</span>
+                  <span className="text-sm font-medium text-gray-900">{index + 1}</span>
+                  <span className="text-sm font-medium text-gray-900">{request.userId?.firstname} {request.userId?.lastname}</span>
+                  <span className="text-sm text-gray-600">{request.userId?.email || request.userEmail}</span>
                   <div className="text-sm text-gray-600">
-                    <div className="font-medium">{request.requestedOn}</div>
-                    <div className="text-xs text-gray-500">{request.time}</div>
+                    <div className="font-medium">{new Date(request.createdAt).toLocaleDateString()}</div>
+                    <div className="text-xs text-gray-500">{new Date(request.createdAt).toLocaleTimeString()}</div>
                   </div>
                   <span className="text-sm text-gray-900 font-mono">
-                    {request.password}
+                    {request.newPassword ? '••••••••' : 'N/A'}
                   </span>
                   <div className="flex gap-2">
                     {request.status === 'pending' ? (
                       <>
                         <button
-                          onClick={() => handleApprove(request.id)}
+                          onClick={() => handleApprove(request._id)}
                           className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-medium text-sm transition-colors"
                         >
                           Approve
                         </button>
                         <button
-                          onClick={() => handleReject(request.id)}
+                          onClick={() => handleReject(request._id)}
                           className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-medium text-sm transition-colors"
                         >
                           Reject

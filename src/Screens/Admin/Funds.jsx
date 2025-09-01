@@ -4,6 +4,7 @@ import { adminAPI, authUtils } from '../../services/api';
 const Funds = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [transactions, setTransactions] = useState([]);
+  const [approvedTransactions, setApprovedTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -25,7 +26,14 @@ const Funds = () => {
         throw new Error(result.message);
       }
 
-      setTransactions(result.data || []);
+      const allTransactions = result.data || [];
+      
+      // Separate pending and approved transactions
+      const pending = allTransactions.filter(t => t.status === 'pending');
+      const approved = allTransactions.filter(t => t.status === 'approved');
+      
+      setTransactions(pending);
+      setApprovedTransactions(approved);
       setError('');
     } catch (err) {
       console.error('Error loading transactions:', err);
@@ -48,8 +56,13 @@ const Funds = () => {
 
       alert(`Transaction ${action}d successfully`);
       
-      // Remove from pending list
+      // Remove from pending list and add to approved list
       setTransactions(prev => prev.filter(t => t._id !== transactionId));
+      
+      // Optionally reload to get updated data
+      setTimeout(() => {
+        loadTransactions();
+      }, 1000);
     } catch (err) {
       console.error('Error updating transaction:', err);
       alert(`Failed to ${action} transaction: ` + (err.message || 'Unknown error'));
@@ -159,32 +172,32 @@ const Funds = () => {
         </div>
         
         <div className="divide-y divide-gray-200">
-          {filteredDepositWithdrawal.length > 0 ? (
-            filteredDepositWithdrawal.map((item) => (
-              <div key={item.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+          {filteredTransactions.length > 0 ? (
+            filteredTransactions.map((item) => (
+              <div key={item._id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                 <div className="grid grid-cols-[auto_1fr_1.5fr_1fr_1fr_1fr_1fr_1.5fr] gap-4 items-center">
-                  <span className="text-sm font-medium text-gray-900">{item.id}</span>
-                  <span className="text-sm font-medium text-gray-900">{item.userName}</span>
-                  <span className="text-sm text-gray-600">{item.userEmail}</span>
-                  <span className="text-sm font-medium text-gray-900">{item.prevTotalBalance.toFixed(2)}</span>
-                  <span className="text-sm font-medium text-gray-900">{item.amount.toFixed(2)}</span>
-                  <span className="text-sm font-medium text-gray-900">{item.remainingBalance.toFixed(2)}</span>
+                  <span className="text-sm font-medium text-gray-900">{item._id}</span>
+                  <span className="text-sm font-medium text-gray-900">{item.userId?.fullName || 'N/A'}</span>
+                  <span className="text-sm text-gray-600">{item.userId?.email || 'N/A'}</span>
+                  <span className="text-sm font-medium text-gray-900">${(item.previousBalance || 0).toFixed(2)}</span>
+                  <span className="text-sm font-medium text-gray-900">${(item.amount || 0).toFixed(2)}</span>
+                  <span className="text-sm font-medium text-gray-900">${(item.newBalance || 0).toFixed(2)}</span>
                   <span className={`text-sm px-3 py-1 rounded-full text-xs font-medium ${
-                    item.method === 'Deposit' 
+                    item.purpose === 'deposit' 
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-red-100 text-red-800'
                   }`}>
-                    {item.method}
+                    {item.purpose || 'N/A'}
                   </span>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleAction(item.id, 'approve')}
+                      onClick={() => handleTransactionAction(item._id, 'approve')}
                       className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-medium text-sm transition-colors"
                     >
                       Approve
                     </button>
                     <button
-                      onClick={() => handleAction(item.id, 'reject')}
+                      onClick={() => handleTransactionAction(item._id, 'reject')}
                       className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-medium text-sm transition-colors"
                     >
                       Reject
@@ -195,13 +208,13 @@ const Funds = () => {
             ))
           ) : (
             <div className="px-6 py-8 text-center text-gray-500">
-              No transactions found matching "{searchTerm}"
+              {searchTerm ? `No transactions found matching "${searchTerm}"` : 'No pending transactions found'}
             </div>
           )}
         </div>
       </div>
 
-      {/* Added Fund History Section */}
+      {/* Added Fund History Section - Shows approved transactions */}
       <div>
         <h2 className="text-2xl font-bold mb-6">Added Fund History</h2>
         
@@ -219,22 +232,28 @@ const Funds = () => {
           </div>
           
           <div className="divide-y divide-gray-200">
-            {addedFundHistory.map((item) => (
-              <div key={item.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                <div className="grid grid-cols-[auto_1fr_1.5fr_1fr_1fr_1fr_1fr] gap-4 items-center">
-                  <span className="text-sm font-medium text-gray-900">{item.id}</span>
-                  <span className="text-sm font-medium text-gray-900">{item.userId}</span>
-                  <span className="text-sm text-gray-600">{item.userEmail}</span>
-                  <span className="text-sm font-medium text-gray-900">{item.prevTotalBalance.toFixed(2)}</span>
-                  <span className="text-sm font-bold text-green-600">{item.addedFund.toFixed(2)}</span>
-                  <span className="text-sm font-medium text-gray-900">{item.currentTotalBalance.toFixed(2)}</span>
-                  <div className="text-sm text-gray-600">
-                    <div className="font-medium">{item.dateTime}</div>
-                    <div className="text-xs text-gray-500">{item.time}</div>
+            {approvedTransactions.length > 0 ? (
+              approvedTransactions.map((item, index) => (
+                <div key={item._id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                  <div className="grid grid-cols-[auto_1fr_1.5fr_1fr_1fr_1fr_1fr] gap-4 items-center">
+                    <span className="text-sm font-medium text-gray-900">{index + 1}</span>
+                    <span className="text-sm font-medium text-gray-900">{item.userId?._id || 'N/A'}</span>
+                    <span className="text-sm text-gray-600">{item.userId?.email || 'N/A'}</span>
+                    <span className="text-sm font-medium text-gray-900">${(item.previousBalance || 0).toFixed(2)}</span>
+                    <span className="text-sm font-bold text-green-600">${(item.amount || 0).toFixed(2)}</span>
+                    <span className="text-sm font-medium text-gray-900">${(item.newBalance || 0).toFixed(2)}</span>
+                    <div className="text-sm text-gray-600">
+                      <div className="font-medium">{new Date(item.createdAt).toLocaleDateString()}</div>
+                      <div className="text-xs text-gray-500">{new Date(item.createdAt).toLocaleTimeString()}</div>
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="px-6 py-8 text-center text-gray-500">
+                No approved transactions found
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

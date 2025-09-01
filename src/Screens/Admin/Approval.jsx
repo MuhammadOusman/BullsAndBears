@@ -3,6 +3,7 @@ import { adminAPI, authUtils } from '../../services/api';
 
 const Approval = () => {
   const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -20,11 +21,28 @@ const Approval = () => {
       }
 
       const result = await adminAPI.getPendingUsers();
+      
       if (result.err) {
         throw new Error(result.message);
       }
 
-      setPendingApprovals(result.data || []);
+      // Filter for pending users (not yet verified/approved)
+      const allUsersData = result.data || [];
+      const pendingUsers = allUsersData.filter(user => 
+        user.isVerified === false || 
+        user.status === 'pending' || 
+        user.isApproved === false ||
+        !user.hasOwnProperty('isVerified')
+      );
+      
+      console.log('Total users found:', allUsersData.length);
+      console.log('Pending users found:', pendingUsers.length);
+      if (allUsersData.length > 0) {
+        console.log('Sample user fields:', Object.keys(allUsersData[0]));
+      }
+
+      setPendingApprovals(pendingUsers);
+      setAllUsers(allUsersData);
       setError('');
     } catch (err) {
       console.error('Error loading pending users:', err);
@@ -70,8 +88,10 @@ const Approval = () => {
     }
   };
 
-  // All pending users should show since they're not approved yet
+  // Calculate statistics
   const pendingCount = pendingApprovals.length;
+  const totalCount = allUsers.length;
+  const approvedCount = allUsers.filter(user => user.isVerified === true).length;
 
   if (loading) {
     return (
@@ -115,7 +135,7 @@ const Approval = () => {
         
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-sm text-gray-600">Total Registered</div>
-          <div className="text-2xl font-bold text-blue-600">{pendingCount}</div>
+          <div className="text-2xl font-bold text-blue-600">{totalCount}</div>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -152,9 +172,9 @@ const Approval = () => {
                 >
                   <div className="grid grid-cols-[auto_1fr_1.5fr_1fr_1fr_1fr_1.5fr] gap-4 items-center">
                     <span className="text-sm font-medium text-gray-900">{index + 1}</span>
-                    <span className="text-sm font-medium text-gray-900">{user.fullName}</span>
+                    <span className="text-sm font-medium text-gray-900">{user.firstname} {user.lastname}</span>
                     <span className="text-sm text-gray-600">{user.email}</span>
-                    <span className="text-sm text-gray-900">{user.phoneNumber || 'N/A'}</span>
+                    <span className="text-sm text-gray-900">{user.phone_number || 'N/A'}</span>
                     <span className="text-sm text-gray-900 font-mono">•••••••••</span>
                     <div className="text-sm text-gray-600">
                       <div className="font-medium">{formatDate}</div>

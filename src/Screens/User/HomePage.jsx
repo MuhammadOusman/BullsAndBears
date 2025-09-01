@@ -1,20 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { authAPI, authUtils } from '../../services/api';
 
 const HomePage = () => {
   const [activeTab, setActiveTab] = useState('Spot');
   const [chartRange, setChartRange] = useState('7D');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      if (!authUtils.isAuthenticated()) {
+        return;
+      }
+
+      const response = await authAPI.getUserProfile();
+      if (!response.err) {
+        setUser(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="px-8 py-8 max-w-6xl mx-auto space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Hello Trader !</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
+            Hello {user?.fullName?.split(' ')[0] || 'Trader'} !
+          </h1>
         </div>
 
         <div className="text-right">
           <div className="text-sm text-gray-400">Account Balance</div>
-          <div className="text-2xl md:text-3xl font-bold">$108,091.12</div>
+          <div className="text-2xl md:text-3xl font-bold">
+            {loading ? (
+              <div className="animate-pulse bg-gray-200 h-8 w-32 rounded"></div>
+            ) : (
+              `$${user?.walletBalance?.toFixed(2) || '0.00'}`
+            )}
+          </div>
         </div>
       </div>
 
@@ -62,8 +94,18 @@ const HomePage = () => {
                 </linearGradient>
               </defs>
 
-              <path d="M0,160 C80,140 160,130 240,120 320,110 400,115 480,105 560,95 640,100 720,95 800,90 L800,220 L0,220 Z" fill="url(#grad)" />
-              <polyline points="0,160 80,140 160,130 240,120 320,110 400,115 480,105 560,95 640,100 720,95 800,90" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <path 
+                d="M0,160 C80,140 160,130 240,120 C320,110 400,115 480,105 C560,95 640,100 720,95 L800,90 L800,220 L0,220 Z" 
+                fill="url(#grad)" 
+              />
+              <polyline 
+                points="0,160 80,140 160,130 240,120 320,110 400,115 480,105 560,95 640,100 720,95 800,90" 
+                fill="none" 
+                stroke="#ef4444" 
+                strokeWidth="3" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+              />
             </svg>
 
             <div className="absolute top-6 left-6 bg-black text-white text-sm px-3 py-1 rounded shadow">$7,980</div>

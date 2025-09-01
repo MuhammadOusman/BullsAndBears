@@ -40,8 +40,6 @@ const Login = ({ onLogin }) => {
       try {
         // Call the real API
         const response = await authAPI.login({ email, password });
-        console.log(response);
-
 
         // Extract token and user data from response
         const { token, user } = response.data;

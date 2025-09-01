@@ -81,7 +81,9 @@ class ApiClient {
       const data = await response.json();
 
       // Backend format: { err: boolean, message: string, data: any }
-      if (data.err) {
+      // Note: The backend sometimes returns err: true even for successful empty results
+      // We should only throw an error if it's actually an error condition
+      if (data.err && response.status >= 400) {
         throw new ApiError(
           data.message || 'Request failed',
           response.status,
@@ -208,14 +210,17 @@ export const adminAPI = {
   // GET /api/admin/users
   getAllUsers: () => apiClient.get('/api/admin/users'),
   
-  // GET /api/admin/user-requests
-  getUserRequests: () => apiClient.get('/api/admin/user-requests'),
+  // GET /api/admin/users (for pending users - filter by status)
+  getPendingUsers: () => apiClient.get('/api/admin/users'),
   
-  // PUT /api/admin/:id
-  acceptUser: (userId) => apiClient.put(`/api/admin/${userId}`),
+  // PUT /api/admin/:id (for user approval)
+  approveUser: (userId, action) => apiClient.put(`/api/admin/${userId}`, { action }),
   
   // GET /api/admin/password-requests
   getPasswordRequests: () => apiClient.get('/api/admin/password-requests'),
+  
+  // GET /api/admin/password-requests (alias for consistency)
+  getPasswordChangeRequests: () => apiClient.get('/api/admin/password-requests'),
   
   // PATCH /api/admin/change-password/approve/:id
   approvePasswordChange: (requestId, action) => 
@@ -242,8 +247,10 @@ export const authUtils = {
   
   logout: () => {
     apiClient.removeAuthToken();
-    // Optionally redirect to login page
-    window.location.href = '/login';
+    // Only redirect if we're not already on the login page
+    if (!window.location.pathname.includes('/login')) {
+      window.location.href = '/login';
+    }
   },
   
   getToken: () => apiClient.getAuthToken(),

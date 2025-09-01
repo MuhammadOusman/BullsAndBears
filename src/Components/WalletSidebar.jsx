@@ -6,7 +6,7 @@ export default function WalletSidebar() {
   const location = useLocation();
   const links = [
     { name: "OverView", to: "/user/wallet/overview" },
-    { name: "Deposit", to: "/user/wallet/deposit" },
+    { name: "Transactions", to: "/user/wallet/transaction" },
     { name: "Transaction History", to: "/user/wallet/history" },
     
   ];

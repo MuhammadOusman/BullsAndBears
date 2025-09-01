@@ -29,7 +29,6 @@ import WalletLayout from './Screens/User/Wallet/WalletLayout';
 import WalletHistory from './Screens/User/Wallet/History';
 import WalletOverview from './Screens/User/Wallet/Overview';
 import WalletTransaction from './Screens/User/Wallet/Transaction';
-import Deposit from './Screens/User/Wallet/Deposit';
 
 function App() {
   // Persist auth state in localStorage
@@ -88,7 +87,6 @@ function App() {
           <Route path="wallet" element={<WalletLayout />} >
             <Route index element={<WalletOverview />} />
             <Route path="overview" element={<WalletOverview />} />
-            <Route path="deposit" element={<Deposit />} />
             <Route path="history" element={<WalletHistory />} />
             <Route path="transaction" element={<WalletTransaction />} />
           </Route>
